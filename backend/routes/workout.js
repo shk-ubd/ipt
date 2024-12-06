@@ -1,76 +1,91 @@
-const express = require("express");
-const requireAuth = require("../middleware/requireauth");
-const workoutmodel = require("../models/workoutmodel");
-const { default: mongoose } = require("mongoose");
+import express from "express";
+import WorkoutModel from "../models/workoutmodel.js";
+import mongoose from "mongoose";
 
-const router = express.Router();
+const WorkoutRouter = express.Router();
 
-router.use(requireAuth);
+// Get all workouts for the authenticated user
+WorkoutRouter.get("/", async (req, res) => {
+  const email = req.query.email; // Extract email from query parameters
 
-router.get("/", async (req, res) => {
-  const user_id = req.user._id;
-  try {
-    const workout = await workoutmodel
-      .find({ user_id })
-      .sort({ createdAt: -1 });
-    res.status(200).json(workout);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
   }
-});
-
-router.get("/:id", async (req, res) => {
-  const Id = req.params.id;
 
   try {
-    if (!mongoose.Types.ObjectId.isValid(Id)) {
-      return res.status(400).json({ error: "no such workout " });
+    // Find workouts directly based on the email field
+    const workouts = await WorkoutModel.find({ useremail: email }).sort({
+      createdAt: -1,
+    });
+
+    if (!workouts.length) {
+      return res
+        .status(404)
+        .json({ error: "No workouts found for the given email" });
     }
-    const workout = await workoutmodel.findById(Id);
+
+    res.status(200).json(workouts);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch workouts" });
+  }
+});
+
+// Get a single workout by ID
+WorkoutRouter.get("/:id", async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "No such workout" });
+    }
+    const workout = await WorkoutModel.findById(id);
+    if (!workout) {
+      return res.status(404).json({ error: "Workout not found" });
+    }
     res.status(200).json(workout);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-router.post("/", async (req, res) => {
-  const { title, reps, load } = req.body;
+// Create a new workout
+WorkoutRouter.post("/", async (req, res) => {
+  const { useremail, title, reps, load } = req.body;
+  const emptyFields = [];
+  if (!title) emptyFields.push("title");
+  if (!reps) emptyFields.push("reps");
+  if (!load) emptyFields.push("load");
 
-  let emptyfield = [];
-  if (!title) {
-    emptyfield.push("title");
-  }
-  if (!reps) {
-    emptyfield.push("reps");
-  }
-  if (!load) {
-    emptyfield.push("load");
-  }
-  if (emptyfield.length > 0) {
+  if (emptyFields.length > 0) {
     return res
       .status(400)
-      .json({ error: "Please fill all the fields", emptyfield });
+      .json({ error: "Please fill all the fields", emptyFields });
   }
+
   try {
-    const user_id = req.user._id;
-    const workout = await workoutmodel.create({ title, reps, load, user_id });
+    const workout = await WorkoutModel.create({ title, reps, load, useremail });
     res.status(200).json(workout);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-router.delete("/:id", async (req, res) => {
-  const Id = req.params.id;
+// Delete a workout by ID
+WorkoutRouter.delete("/:id", async (req, res) => {
+  const id = req.params.id;
+
   try {
-    if (!mongoose.Types.ObjectId.isValid(Id)) {
-      return res.status(400).json({ error: "no such workout " });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "No such workout" });
     }
-    const workout = await workoutmodel.findByIdAndDelete(Id);
+    const workout = await WorkoutModel.findByIdAndDelete(id);
+    if (!workout) {
+      return res.status(404).json({ error: "Workout not found" });
+    }
     res.status(200).json(workout);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-module.exports = router;
+export default WorkoutRouter;

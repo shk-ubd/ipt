@@ -3,37 +3,37 @@ import { Link } from "react-router-dom";
 import { AuthContext } from "../context/authcontext";
 import { WorkoutContext } from "../context/context";
 
-export default function Navbar(){
-    const {dispatch: workoutdispatch} = useContext(WorkoutContext) 
-    const {user,dispatch} = useContext(AuthContext)
-    const handleclick =() =>{
-        
+export default function Navbar() {
+  const { dispatch: workoutdispatch } = useContext(WorkoutContext);
+  const { user, dispatch } = useContext(AuthContext);
+  const handleclick = () => {
+    localStorage.removeItem("user");
 
-        localStorage.removeItem('user')
+    dispatch({ type: "LOGOUT" });
+    workoutdispatch({ type: "SET_WORKOUTS", payload: [] });
+  };
 
-        dispatch({type:'LOGOUT'})
-        workoutdispatch({type: 'SET_WORKOUTS', payload : []})
-    }
-
-
-    return(
-        
+  return (
     <header>
-        
-        <div className="container">
-            <div className="logo">
-            <Link to='/' ><h1>LOGO</h1></Link>
-            </div>
-            {user && (<div>
-                <span>{user.email}</span>
-                <button onClick={handleclick}>Log out</button>
-            </div>)}
-            {!user && (<div className="option">
-            <Link to='/login'>Login</Link>
-           <Link to='/register'>Register</Link>
-            </div>)}
+      <div className="container">
+        <div className="logo">
+          <Link to="/">
+            <h1>LOGO</h1>
+          </Link>
         </div>
+        {user && (
+          <div>
+            <span>{user.email}</span>
+            <button onClick={handleclick}>Log out</button>
+          </div>
+        )}
+        {!user && (
+          <div className="option">
+            <Link to="/login">Login</Link>
+            <Link to="/register">Register</Link>
+          </div>
+        )}
+      </div>
     </header>
-        
-    )
+  );
 }

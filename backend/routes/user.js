@@ -1,75 +1,66 @@
-const express = require("express");
-const Users = require("../models/usermodel");
-const bcrypt = require("bcrypt");
-const validator = require("validator");
-const jwt = require("jsonwebtoken");
+import express from "express";
+import Users from "../models/usermodel.js";
+import bcrypt from "bcrypt";
+import validator from "validator";
 
-const router = express.Router();
+const UserRouter = express.Router();
 
-//token
-const secret = process.env.JWT_SECRET;
-
-const createToekn = (_id) => {
-  return jwt.sign({ _id }, secret, { expiresIn: "2d" });
-};
-
-//register
-router.post("/register", async (req, res) => {
+// Register route
+UserRouter.post("/register", async (req, res) => {
   const { email, password } = req.body;
   const salt = bcrypt.genSaltSync();
+
   try {
-    //validation
+    // Validation
     if (!email || !password) {
-      throw Error("All feilds must be filled");
+      throw new Error("All fields must be filled");
     }
     if (!validator.isEmail(email)) {
-      throw Error("Email is not valid");
+      throw new Error("Email is not valid");
     }
     if (!validator.isStrongPassword(password)) {
-      throw Error(
-        "Password is not strong enough. Password should contain uppercase,lowercase,spacial character and number (FGDsas12@) "
+      throw new Error(
+        "Password is not strong enough. Password should contain uppercase, lowercase, special characters, and numbers (e.g., FGDsas12@)"
       );
     }
 
     const exist = await Users.findOne({ email });
     if (exist) {
-      throw Error("Email already in use");
+      throw new Error("Email already in use");
     }
-    const data = await Users.create({
-      email,
-      password: bcrypt.hashSync(password, salt),
-    });
-    const token = createToekn(data._id);
-    res.status(200).json({ email, token });
+
+    const hashedPassword = bcrypt.hashSync(password, salt);
+    const data = await Users.create({ email, password: hashedPassword });
+
+    res.status(200).json({ email });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-//login
-
-router.post("/login", async (req, res) => {
+// Login route
+UserRouter.post("/login", async (req, res) => {
   const { email, password } = req.body;
+
   try {
     if (!email || !password) {
-      throw Error("All fields must be filled");
+      throw new Error("All fields must be filled");
     }
-    const userexist = await Users.findOne({ email });
-    if (!userexist) {
-      throw Error("Incorrect enail");
+
+    const userExist = await Users.findOne({ email });
+    if (!userExist) {
+      throw new Error("Incorrect email");
     }
-    const match = bcrypt.compareSync(password, userexist.password);
+
+    const match = bcrypt.compareSync(password, userExist.password);
     if (!match) {
-      throw Error("Incorrect Password");
+      throw new Error("Incorrect password");
     }
 
-    //token
-
-    const token = createToekn(userexist._id);
-    res.status(200).json({ email, token });
+    res.status(200).json({ email });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-module.exports = router;
+export default UserRouter;

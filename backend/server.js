@@ -1,40 +1,35 @@
-const express = require("express");
-const WorkoutRouter = require("./routes/workout");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const UserRouter = require("./routes/user");
+import express from "express";
+import WorkoutRouter from "./routes/workout.js";
+import mongoose from "mongoose";
+import cors from "cors";
+import dotenv from "dotenv";
+import UserRouter from "./routes/user.js";
 
 dotenv.config();
 
-//express app
+// Express app
 const app = express();
 
-app.use(cors({
-  origin: "http://localhost:3000", // Replace with your frontend's URL
-  credentials: true, // Allow cookies and other credentials
-}));
-console.log(process.env.JWT_SECRET);
-//middleware
+// Middleware
 app.use(express.json());
-
-//routes
+app.use(cors());
+// Routes
 app.use("/workout", WorkoutRouter);
 app.use("/user", UserRouter);
-//saname
-//
-//
 
-//listening for request
-
+// MongoDB connection URL
 const url = process.env.MONGODB_URI;
 
+// Listening for requests
 app.listen(process.env.PORT, async () => {
   try {
-    await mongoose.connect(url);
+    await mongoose.connect(url, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
 
     console.log("Connected to MongoDB");
-    console.log("Listening on port 4000");
+    console.log(`Listening on port ${process.env.PORT}`);
   } catch (error) {
     console.error("Error connecting to MongoDB:", error.message);
   }
